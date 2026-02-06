@@ -4,13 +4,15 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.collegeschedule.data.repository.FavoritesRepository
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class ScheduleViewModel(application: Application) : AndroidViewModel(application) {
     private val favoritesRepository = FavoritesRepository(application.applicationContext)
 
-    // Избранные группы (Flow)
+    // Избранные группы (StateFlow)
     val favoriteGroups: StateFlow<Set<String>> = favoritesRepository.favoriteGroups
         .stateIn(
             scope = viewModelScope,

@@ -342,7 +342,6 @@ fun LessonItem(lesson: com.example.collegeschedule.data.dto.LessonDto) {
     }
 }
 
-// Главный экран с исправленным сохранением состояния
 @Composable
 fun ScheduleScreen(
     favoriteGroups: Set<String>,
@@ -381,19 +380,22 @@ fun ScheduleScreen(
         }
     }
 
+    // Ключевое исправление: сохраняем previousSelectedGroupName для сравнения
+    var previousSelectedGroupName by remember { mutableStateOf<String?>(null) }
+
     // При изменении selectedGroupName извне (например, из избранного)
     LaunchedEffect(selectedGroupName) {
-        Log.d("SCHEDULE_SCREEN", "📌 Изменился selectedGroupName: $selectedGroupName")
-        if (selectedGroupName != null && allGroups.isNotEmpty()) {
-            val group = allGroups.find { it.groupName == selectedGroupName }
-            if (group != null) {
-                Log.d("SCHEDULE_SCREEN", "✅ Найдена группа в списке: ${group.groupName}")
-                selectedGroup = group
-                searchText = group.groupName
-                loadSchedule(group)
-                // НЕ вызываем onGroupSelected здесь, чтобы избежать циклических обновлений
-            } else {
-                Log.d("SCHEDULE_SCREEN", "⚠️ Группа $selectedGroupName не найдена в списке")
+        if (selectedGroupName != null && selectedGroupName != previousSelectedGroupName) {
+            Log.d("SCHEDULE_SCREEN", "🎯 Получена новая группа из AppState: $selectedGroupName")
+            previousSelectedGroupName = selectedGroupName
+
+            if (allGroups.isNotEmpty()) {
+                val group = allGroups.find { it.groupName == selectedGroupName }
+                if (group != null) {
+                    selectedGroup = group
+                    searchText = group.groupName
+                    loadSchedule(group)
+                }
             }
         }
     }
@@ -404,11 +406,10 @@ fun ScheduleScreen(
             try {
                 allGroups = RetrofitClient.api.getAllGroups()
                 Log.d("NETWORK", "✅ Успешно! Загружено ${allGroups.size} групп")
-                Log.d("NETWORK", "Группы: ${allGroups.map { it.groupName }}")
 
                 if (allGroups.isNotEmpty()) {
-                    // Приоритет 1: Используем selectedGroupName из параметров, если он есть
-                    // Приоритет 2: Используем первую группу из списка
+                    // Если есть выбранная группа из параметров - используем её
+                    // Иначе берем первую группу
                     val groupToSelect = if (selectedGroupName != null) {
                         allGroups.find { it.groupName == selectedGroupName } ?: allGroups[0]
                     } else {
@@ -418,8 +419,7 @@ fun ScheduleScreen(
                     selectedGroup = groupToSelect
                     searchText = groupToSelect.groupName
 
-                    // Вызываем onGroupSelected только если selectedGroupName был null
-                    // Это означает, что это первый запуск или группа еще не сохранена
+                    // Сохраняем в AppState, если это первый запуск
                     if (selectedGroupName == null) {
                         Log.d("SCHEDULE_SCREEN", "🚀 Первый запуск, сохраняем группу: ${groupToSelect.groupName}")
                         onGroupSelected(groupToSelect.groupName)
@@ -517,7 +517,7 @@ fun ScheduleScreen(
                                             showDropdown = false
                                             searchText = group.groupName
                                             loadSchedule(group)
-                                            // ВАЖНО: Сохраняем выбор в AppState
+                                            // Сохраняем выбор в AppState
                                             onGroupSelected(group.groupName)
                                         }
                                     )

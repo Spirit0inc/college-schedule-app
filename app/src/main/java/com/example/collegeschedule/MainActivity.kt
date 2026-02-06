@@ -13,11 +13,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
 import com.example.collegeschedule.ui.favorites.FavoritesScreen
 import com.example.collegeschedule.ui.schedule.ScheduleScreen
 import com.example.collegeschedule.ui.theme.CollegeScheduleTheme
@@ -39,35 +37,12 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-// Улучшенный AppState с надежным хранением состояния
+// Упрощенный AppState
 class AppState {
-    var favoriteGroups by mutableStateOf(emptySet<String>())
     var selectedGroupName by mutableStateOf<String?>(null)
-
-    // Временная переменная для хранения выбранной группы при навигации
-    var pendingSelectedGroupName by mutableStateOf<String?>(null)
-
-    fun addToFavorites(groupName: String) {
-        favoriteGroups = favoriteGroups + groupName
-    }
-
-    fun removeFromFavorites(groupName: String) {
-        favoriteGroups = favoriteGroups - groupName
-    }
 
     fun selectGroup(groupName: String) {
         selectedGroupName = groupName
-    }
-
-    fun setPendingGroup(groupName: String?) {
-        pendingSelectedGroupName = groupName
-    }
-
-    fun applyPendingGroup() {
-        pendingSelectedGroupName?.let {
-            selectedGroupName = it
-            pendingSelectedGroupName = null
-        }
     }
 }
 
@@ -83,12 +58,8 @@ fun CollegeScheduleApp() {
     val appState = rememberAppState()
     val viewModel: ScheduleViewModel = viewModel()
 
-    // Подписываемся на избранные группы из ViewModel
-    LaunchedEffect(Unit) {
-        viewModel.favoriteGroups.collect { favorites ->
-            appState.favoriteGroups = favorites
-        }
-    }
+    // Состояние избранных групп получаем из ViewModel
+    val favoriteGroups by viewModel.favoriteGroups.collectAsState(initial = emptySet())
 
     Scaffold(
         topBar = {
@@ -106,12 +77,9 @@ fun CollegeScheduleApp() {
                     label = { Text("Расписание") },
                     selected = true,
                     onClick = {
-                        // Применяем отложенную группу при переходе на расписание
-                        appState.applyPendingGroup()
                         navController.navigate("schedule") {
                             launchSingleTop = true
                             restoreState = true
-                            popUpTo("schedule") { inclusive = false }
                         }
                     }
                 )
@@ -136,7 +104,7 @@ fun CollegeScheduleApp() {
         ) {
             composable("schedule") {
                 ScheduleScreen(
-                    favoriteGroups = appState.favoriteGroups,
+                    favoriteGroups = favoriteGroups,
                     selectedGroupName = appState.selectedGroupName,
                     onAddToFavorites = { groupName ->
                         viewModel.addToFavorites(groupName)
@@ -151,14 +119,13 @@ fun CollegeScheduleApp() {
             }
             composable("favorites") {
                 FavoritesScreen(
-                    favoriteGroups = appState.favoriteGroups,
+                    favoriteGroups = favoriteGroups,
                     onGroupSelected = { groupName ->
-                        // Устанавливаем отложенную группу для применения при переходе
-                        appState.setPendingGroup(groupName)
+                        // ВАЖНО: сразу сохраняем группу и переходим
+                        appState.selectGroup(groupName)
                         navController.navigate("schedule") {
                             launchSingleTop = true
-                            restoreState = false
-                            popUpTo("schedule") { inclusive = true }
+                            restoreState = true
                         }
                     },
                     onRemoveFromFavorites = { groupName ->
