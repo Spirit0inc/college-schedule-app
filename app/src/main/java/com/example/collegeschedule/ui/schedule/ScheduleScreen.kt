@@ -1,10 +1,13 @@
 package com.example.collegeschedule.ui.schedule
 
+import android.util.Log
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Search
@@ -15,6 +18,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -37,6 +41,17 @@ val subjectColors = mapOf(
     "Физическая культура" to Color(0xFFE91E63)
 )
 
+// Цвета для рамок дней недели (сине-фиолетовая гамма)
+val dayBorderColors = mapOf(
+    "Понедельник" to Color(0xFF6A1B9A),  // Фиолетовый
+    "Вторник" to Color(0xFF7E57C2),      // Светло-фиолетовый
+    "Среда" to Color(0xFF5C6BC0),        // Индиго
+    "Четверг" to Color(0xFF42A5F5),      // Синий
+    "Пятница" to Color(0xFF29B6F6),      // Голубой
+    "Суббота" to Color(0xFF26C6DA),      // Бирюзовый
+    "Воскресенье" to Color(0xFFAB47BC)   // Орхидея
+)
+
 // Вспомогательные компоненты
 @Composable
 fun GroupItem(group: StudentGroupDto, onClick: () -> Unit) {
@@ -55,7 +70,6 @@ fun GroupItem(group: StudentGroupDto, onClick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Цветной кружок для курса
             Box(
                 modifier = Modifier
                     .size(32.dp)
@@ -91,8 +105,8 @@ fun GroupItem(group: StudentGroupDto, onClick: () -> Unit) {
 fun ScheduleList(schedule: List<ScheduleDto>) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = PaddingValues(vertical = 8.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        contentPadding = PaddingValues(vertical = 16.dp, horizontal = 8.dp)
     ) {
         items(schedule) { day ->
             DayCard(day = day)
@@ -102,50 +116,65 @@ fun ScheduleList(schedule: List<ScheduleDto>) {
 
 @Composable
 fun DayCard(day: ScheduleDto) {
+    val borderColor = dayBorderColors[day.weekday] ?: MaterialTheme.colorScheme.primary
+    val backgroundColor = Color.White
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp),
+            .padding(horizontal = 8.dp, vertical = 4.dp)
+            .shadow(
+                elevation = 4.dp,
+                shape = RoundedCornerShape(12.dp),
+                spotColor = borderColor.copy(alpha = 0.3f)
+            )
+            .border(
+                width = 2.5.dp,
+                color = borderColor,
+                shape = RoundedCornerShape(12.dp)
+            ),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
+            containerColor = backgroundColor
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        shape = MaterialTheme.shapes.large
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        shape = RoundedCornerShape(12.dp)
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
-            // Заголовок дня
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            // Заголовок дня недели с цветным фоном
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(borderColor.copy(alpha = 0.15f))
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = day.weekday,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.SemiBold
-                    ),
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Text(
-                    text = day.lessonDate,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = day.weekday.uppercase(),
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = borderColor
+                    )
+                    Text(
+                        text = day.lessonDate,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontWeight = FontWeight.Medium
+                        ),
+                        color = borderColor.copy(alpha = 0.8f)
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // Разделитель
-            HorizontalDivider(
-                color = MaterialTheme.colorScheme.outlineVariant,
-                thickness = 1.dp
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Список пар
             Column(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
@@ -154,18 +183,24 @@ fun DayCard(day: ScheduleDto) {
                 }
             }
 
-            // Если пар нет
             if (day.lessons.isEmpty()) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(60.dp),
+                        .height(80.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(borderColor.copy(alpha = 0.05f))
+                        .border(
+                            width = 1.dp,
+                            color = borderColor.copy(alpha = 0.2f),
+                            shape = RoundedCornerShape(8.dp)
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = "Нет занятий",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = borderColor.copy(alpha = 0.6f)
                     )
                 }
             }
@@ -175,15 +210,22 @@ fun DayCard(day: ScheduleDto) {
 
 @Composable
 fun LessonItem(lesson: com.example.collegeschedule.data.dto.LessonDto) {
+    val borderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(
+                width = 1.dp,
+                color = borderColor,
+                shape = MaterialTheme.shapes.medium
+            ),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+            containerColor = Color.White
         ),
-        elevation = CardDefaults.cardElevation(1.dp)
+        elevation = CardDefaults.cardElevation(0.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // Время и номер пары
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -204,9 +246,7 @@ fun LessonItem(lesson: com.example.collegeschedule.data.dto.LessonDto) {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Занятия для подгрупп
             lesson.groupParts.forEach { (part, details) ->
-                // Цветная полоска для предмета
                 val subjectColor = subjectColors[details?.subject] ?: MaterialTheme.colorScheme.primary
 
                 Row(
@@ -215,7 +255,6 @@ fun LessonItem(lesson: com.example.collegeschedule.data.dto.LessonDto) {
                         .padding(vertical = 8.dp),
                     verticalAlignment = Alignment.Top
                 ) {
-                    // Цветная полоска
                     Box(
                         modifier = Modifier
                             .width(4.dp)
@@ -227,7 +266,6 @@ fun LessonItem(lesson: com.example.collegeschedule.data.dto.LessonDto) {
                     Spacer(modifier = Modifier.width(12.dp))
 
                     Column(modifier = Modifier.weight(1f)) {
-                        // Заголовок с предметом
                         Row(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
@@ -241,18 +279,19 @@ fun LessonItem(lesson: com.example.collegeschedule.data.dto.LessonDto) {
                             )
 
                             Badge(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant
+                                containerColor = subjectColor.copy(alpha = 0.2f),
+                                contentColor = subjectColor
                             ) {
                                 Text(
                                     text = if (part == "FULL") "Вся группа" else "Подгруппа $part",
-                                    style = MaterialTheme.typography.labelSmall
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Medium
                                 )
                             }
                         }
 
                         Spacer(modifier = Modifier.height(4.dp))
 
-                        // Преподаватель
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -272,7 +311,6 @@ fun LessonItem(lesson: com.example.collegeschedule.data.dto.LessonDto) {
 
                         Spacer(modifier = Modifier.height(2.dp))
 
-                        // Аудитория
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -292,17 +330,19 @@ fun LessonItem(lesson: com.example.collegeschedule.data.dto.LessonDto) {
                     }
                 }
 
-                HorizontalDivider(
-                    modifier = Modifier.padding(vertical = 4.dp),
-                    color = MaterialTheme.colorScheme.outlineVariant,
-                    thickness = 0.5.dp
-                )
+                if (part != lesson.groupParts.keys.lastOrNull()) {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = 4.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant,
+                        thickness = 0.5.dp
+                    )
+                }
             }
         }
     }
 }
 
-// Главный экран
+// Главный экран с исправленным сохранением состояния
 @Composable
 fun ScheduleScreen(
     favoriteGroups: Set<String>,
@@ -320,32 +360,40 @@ fun ScheduleScreen(
     var searchText by remember { mutableStateOf("") }
     val coroutineScope = rememberCoroutineScope()
 
-    // Функция загрузки расписания (ДОБАВЛЕНА ЗДЕСЬ)
+    // Функция загрузки расписания
     fun loadSchedule(group: StudentGroupDto) {
         coroutineScope.launch {
             try {
                 val (start, end) = getCurrentWeekDates()
+                Log.d("NETWORK", "🔄 Загружаем расписание для группы ${group.groupName}")
                 schedule = RetrofitClient.api.getSchedule(
                     groupName = group.groupName,
                     start = start,
                     end = end
                 )
+                Log.d("NETWORK", "✅ Расписание загружено: ${schedule.size} дней")
                 error = null
             } catch (e: Exception) {
+                Log.e("NETWORK", "❌ Ошибка загрузки расписания: ${e.message}", e)
                 error = "Ошибка загрузки расписания: ${e.message}"
                 schedule = emptyList()
             }
         }
     }
 
-    // При изменении selectedGroupName извне - обновляем выбор
+    // При изменении selectedGroupName извне (например, из избранного)
     LaunchedEffect(selectedGroupName) {
+        Log.d("SCHEDULE_SCREEN", "📌 Изменился selectedGroupName: $selectedGroupName")
         if (selectedGroupName != null && allGroups.isNotEmpty()) {
             val group = allGroups.find { it.groupName == selectedGroupName }
-            if (group != null && group != selectedGroup) {
+            if (group != null) {
+                Log.d("SCHEDULE_SCREEN", "✅ Найдена группа в списке: ${group.groupName}")
                 selectedGroup = group
                 searchText = group.groupName
                 loadSchedule(group)
+                // НЕ вызываем onGroupSelected здесь, чтобы избежать циклических обновлений
+            } else {
+                Log.d("SCHEDULE_SCREEN", "⚠️ Группа $selectedGroupName не найдена в списке")
             }
         }
     }
@@ -355,12 +403,35 @@ fun ScheduleScreen(
         coroutineScope.launch {
             try {
                 allGroups = RetrofitClient.api.getAllGroups()
-                // Выбираем первую группу по умолчанию
+                Log.d("NETWORK", "✅ Успешно! Загружено ${allGroups.size} групп")
+                Log.d("NETWORK", "Группы: ${allGroups.map { it.groupName }}")
+
                 if (allGroups.isNotEmpty()) {
-                    selectedGroup = allGroups[0]
-                    loadSchedule(selectedGroup!!)
+                    // Приоритет 1: Используем selectedGroupName из параметров, если он есть
+                    // Приоритет 2: Используем первую группу из списка
+                    val groupToSelect = if (selectedGroupName != null) {
+                        allGroups.find { it.groupName == selectedGroupName } ?: allGroups[0]
+                    } else {
+                        allGroups[0]
+                    }
+
+                    selectedGroup = groupToSelect
+                    searchText = groupToSelect.groupName
+
+                    // Вызываем onGroupSelected только если selectedGroupName был null
+                    // Это означает, что это первый запуск или группа еще не сохранена
+                    if (selectedGroupName == null) {
+                        Log.d("SCHEDULE_SCREEN", "🚀 Первый запуск, сохраняем группу: ${groupToSelect.groupName}")
+                        onGroupSelected(groupToSelect.groupName)
+                    }
+
+                    loadSchedule(groupToSelect)
+                } else {
+                    Log.w("NETWORK", "⚠️ Нет групп")
+                    error = "Нет доступных групп"
                 }
             } catch (e: Exception) {
+                Log.e("NETWORK", "❌ Ошибка загрузки групп: ${e.message}", e)
                 error = "Ошибка загрузки групп: ${e.message}"
             } finally {
                 loading = false
@@ -368,7 +439,7 @@ fun ScheduleScreen(
         }
     }
 
-    // Фильтрация групп по поиску
+    // Фильтрация групп
     val filteredGroups = if (searchText.isEmpty()) {
         allGroups
     } else {
@@ -386,13 +457,11 @@ fun ScheduleScreen(
             modifier = Modifier
                 .fillMaxSize()
         ) {
-            // Поиск и выбор группы
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 tonalElevation = 3.dp
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    // Заголовок
                     Text(
                         text = "Выбор группы",
                         style = MaterialTheme.typography.titleMedium,
@@ -402,7 +471,6 @@ fun ScheduleScreen(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // Поле поиска
                     OutlinedTextField(
                         value = searchText,
                         onValueChange = {
@@ -433,7 +501,6 @@ fun ScheduleScreen(
                         )
                     )
 
-                    // Выпадающий список
                     if (showDropdown && filteredGroups.isNotEmpty()) {
                         Card(
                             modifier = Modifier
@@ -450,6 +517,7 @@ fun ScheduleScreen(
                                             showDropdown = false
                                             searchText = group.groupName
                                             loadSchedule(group)
+                                            // ВАЖНО: Сохраняем выбор в AppState
                                             onGroupSelected(group.groupName)
                                         }
                                     )
@@ -458,7 +526,6 @@ fun ScheduleScreen(
                         }
                     }
 
-                    // Выбранная группа
                     selectedGroup?.let { group ->
                         Spacer(modifier = Modifier.height(12.dp))
                         Surface(
@@ -520,7 +587,6 @@ fun ScheduleScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Расписание
             when {
                 loading -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

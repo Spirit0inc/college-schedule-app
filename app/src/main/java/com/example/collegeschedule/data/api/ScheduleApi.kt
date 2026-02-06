@@ -14,6 +14,6 @@ interface ScheduleApi {
         @Query("end") end: String
     ): List<ScheduleDto>
 
-    @GET("api/schedule/groups")
+    @GET("api/Groups")
     suspend fun getAllGroups(): List<StudentGroupDto>
 }

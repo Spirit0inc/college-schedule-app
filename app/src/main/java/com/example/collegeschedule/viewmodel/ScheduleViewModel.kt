@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 class ScheduleViewModel(application: Application) : AndroidViewModel(application) {
-    // Исправлено: передаём application.context
     private val favoritesRepository = FavoritesRepository(application.applicationContext)
 
     // Избранные группы (Flow)
